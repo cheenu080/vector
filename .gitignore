@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.log
+
+# Virtual environments
+venv/
+.env
+.env.*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+*.pid
+*.seed
+*.bak
+*.tar
+*.gz
+*.tgz
+*.zip
+*.bak
+*.orig
+*.rej
+*.swo
+*.swp
+*~
+
+# Docker build artifacts
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+wheels/
+
+# FastAPI / Uvicorn logs
+*.log
+*.sqlite3
+
+# Local notebooks/checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# Coverage / test
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.mypy_cache/
+pytestdebug.log
+
+# Node (if frontend ever added)
+node_modules/
+.env
