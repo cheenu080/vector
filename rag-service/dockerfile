@@ -1,18 +1,33 @@
-    # Use an official Python runtime as a parent image
-    FROM python:3.12-slim
+# Use Python 3.11 for FastAPI + Pydantic v2 compatibility
+FROM python:3.11-slim
 
-    # Set the working directory in the container
-    WORKDIR /app
+# Prevent Python from writing pyc files and buffering stdout
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-    # Copy the current directory contents into the container at /app
-    COPY . /app
+# Set working directory
+WORKDIR /app
 
-    # Install any needed packages specified in requirements.txt
-    RUN pip install --no-cache-dir -r requirements.txt
+# Copy only requirements first for caching
+COPY rag-service/requirements.txt .
 
-    # Make port 8002 available to the world outside this container
-    EXPOSE 8002
+# Install system dependencies required by nltk and others
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        wget \
+        unzip \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-    # Define the command to run the application
-    CMD ["uvicorn", "rag_service:app", "--host", "0.0.0.0", "--port", "8002"]
-    
+# Install Python dependencies
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && python -m nltk.downloader punkt wordnet
+
+# Copy service code
+COPY rag-service/rag_service.py .
+
+# Expose service port
+EXPOSE 8002
+
+# Default command to run the FastAPI app
+CMD ["uvicorn", "rag_service:app", "--host", "0.0.0.0", "--port", "8002", "--reload"]

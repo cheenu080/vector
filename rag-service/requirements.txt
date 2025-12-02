@@ -1,6 +1,30 @@
-fastapi
-uvicorn
-transformers
-faiss-cpu
-pydantic
-sentence-transformers
+# API framework
+fastapi==0.111.0
+uvicorn==0.30.1
+pydantic==2.8.2
+pydantic-settings==2.3.4   # Required for Pydantic v2 settings support
+
+# Embedding + retrieval
+sentence-transformers==2.7.0
+faiss-cpu==1.8.0
+numpy==1.26.4
+
+# HuggingFace / Transformers
+transformers==4.42.3
+huggingface_hub==0.23.2
+
+# Google Gemini (GenAI client)
+google-genai
+
+# LangChain core + community integrations
+langchain==0.2.3
+langchain-community==0.2.4
+
+# Config
+python-dotenv==1.0.1
+
+# Evaluation (BLEU)
+nltk==3.8.1
+
+# Optional helpers for Pydantic v2
+pydantic-extra-types==2.8.2

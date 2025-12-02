@@ -3,22 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-Powered Q&A System</title>
+    <title>Agentic RAG for Healthcare QnA with Curated Dataset Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Custom styles for the dropdown menu */
+        .dropdown-menu {
+            transition: all 0.2s ease-in-out;
+        }
+        /* Custom active state for buttons */
+        .source-button {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .source-button.active {
+            transform: scale(1.05);
+            font-weight: 700; /* Bold the text for emphasis */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .source-button.active.dataset { background-color: #3b82f6; color: white; }
+        .source-button.active.huggingface { background-color: #ec4899; color: white; }
+        .source-button.active.gemini { background-color: #10b981; color: white; }
     </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
     <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full border border-gray-200">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">RAG-Powered Q&A System</h1>
-        
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Agentic RAG for Healthcare QnA</h1>
+
         <div class="space-y-4">
-            <input type="text" id="questionInput" placeholder="Ask your question here..."
+            <div class="relative inline-block w-full" id="dropdownContainer">
+                <button id="dropdownButton" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-left bg-gray-50 text-gray-700 font-medium hover:bg-gray-100 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span id="dropdownText">Select a question...</span>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                </button>
+                <div id="dropdownMenu" class="dropdown-menu absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10 hidden">
+                    <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="dropdownButton">
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectQuestion(event, 'What vaccinations do adults need?')">What vaccinations do adults need?</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectQuestion(event, 'What are the symptoms of diabetes?')">What are the symptoms of diabetes?</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectQuestion(event, 'How do I perform CPR correctly?')">How do I perform CPR correctly?</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectQuestion(event, 'What are the symptoms of iron deficiency anemia?')">What are the symptoms of iron deficiency anemia?</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectQuestion(event, 'How do I know if I have a hormone imbalance?')">How do I know if I have a hormone imbalance?</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectQuestion(event, 'What are the warning signs of skin cancer?')">What are the warning signs of skin cancer?</a>
+                    </div>
+                </div>
+            </div>
+
+            <input type="text" id="questionInput" placeholder="Or, ask your own question here..."
                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                    onkeydown="if(event.key === 'Enter') askQuestion()">
             
@@ -27,66 +64,116 @@
                 Ask
             </button>
         </div>
-        
+
         <div id="result" class="mt-8 p-6 bg-gray-50 rounded-lg shadow-inner border border-gray-200">
             <div id="loadingIndicator" class="hidden text-center text-gray-500">
                 <p>Loading...</p>
             </div>
             <div id="answer" class="text-gray-700 text-lg leading-relaxed"></div>
-            <div id="context" class="text-sm text-gray-500 mt-4 pt-4 border-t border-gray-200 hidden">
-                <span class="font-semibold">Context Used:</span>
-                <p id="contextText" class="mt-1"></p>
+            <div id="source-buttons" class="mt-4 pt-4 border-t border-gray-200 flex items-center space-x-4">
+                <span class="font-semibold text-gray-600">Answer generated using:</span>
+                <button id="dataset-btn" class="source-button px-4 py-2 rounded-lg text-sm bg-gray-200 text-gray-700 font-medium">Dataset</button>
+                <button id="huggingface-btn" class="source-button px-4 py-2 rounded-lg text-sm bg-gray-200 text-gray-700 font-medium">Hugging Face</button>
+                <button id="gemini-btn" class="source-button px-4 py-2 rounded-lg text-sm bg-gray-200 text-gray-700 font-medium">Gemini</button>
             </div>
             <div id="error" class="text-red-500 font-medium hidden"></div>
         </div>
     </div>
 
     <script>
-        async function askQuestion() {
-            const question = document.getElementById('questionInput').value;
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            const answerDiv = document.getElementById('answer');
-            const contextDiv = document.getElementById('context');
-            const contextText = document.getElementById('contextText');
-            const errorDiv = document.getElementById('error');
+        const endpointUrl = 'http://localhost:8000/ask';
+        const dropdownButton = document.getElementById('dropdownButton');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const questionInput = document.getElementById('questionInput');
+        const dropdownText = document.getElementById('dropdownText');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const answerDiv = document.getElementById('answer');
+        const datasetBtn = document.getElementById('dataset-btn');
+        const huggingfaceBtn = document.getElementById('huggingface-btn');
+        const geminiBtn = document.getElementById('gemini-btn');
+        const errorDiv = document.getElementById('error');
+        const sourceButtons = [datasetBtn, huggingfaceBtn, geminiBtn];
+
+        dropdownButton.addEventListener('click', e => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+        });
+
+        window.addEventListener('click', () => {
+            dropdownMenu.classList.add('hidden');
+        });
+
+        function selectQuestion(event, question) {
+            event.preventDefault();
+            questionInput.value = question;
+            dropdownText.innerText = question;
+            dropdownMenu.classList.add('hidden');
+        }
+
+        function resetSourceButtons() {
+            sourceButtons.forEach(btn => {
+                btn.classList.remove('active', 'dataset', 'huggingface', 'gemini');
+            });
+        }
+
+        function highlightSourceButton(source) {
+            resetSourceButtons();
+            if (!source) return;
             
-            // Clear previous results and show loading indicator
+            const normalizedSource = source.trim().toLowerCase();
+
+            let buttonToHighlight;
+            let classToHighlight;
+
+            if (normalizedSource.startsWith('dataset')) {
+                buttonToHighlight = datasetBtn;
+                classToHighlight = 'dataset';
+            } else if (normalizedSource.includes('hf')) {
+                buttonToHighlight = huggingfaceBtn;
+                classToHighlight = 'huggingface';
+            } else if (normalizedSource.includes('gemini')) {
+                buttonToHighlight = geminiBtn;
+                classToHighlight = 'gemini';
+            }
+
+            if (buttonToHighlight && classToHighlight) {
+                buttonToHighlight.classList.add('active', classToHighlight);
+            }
+        }
+
+        async function askQuestion() {
+            const question = questionInput.value.trim();
+            if (!question) {
+                errorDiv.innerText = "Please enter a question or select one from the dropdown.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
             answerDiv.innerText = "";
-            contextDiv.classList.add('hidden');
+            resetSourceButtons();
             errorDiv.classList.add('hidden');
             loadingIndicator.classList.remove('hidden');
 
             try {
-                // Send the request to your Gateway service
-                const response = await fetch('http://localhost:8000/ask', {
+                const response = await fetch(endpointUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query: question })
                 });
 
                 const data = await response.json();
-
-                // Hide loading indicator
                 loadingIndicator.classList.add('hidden');
 
                 if (response.ok) {
-                    // Display the answer and context
                     answerDiv.innerText = data.answer;
-                    if (data.context) {
-                        contextText.innerText = data.context;
-                        contextDiv.classList.remove('hidden');
-                    }
+                    highlightSourceButton(data.source);
                 } else {
-                    // Display the error message from the gateway
-                    errorDiv.innerText = `Error: ${data.error}`;
+                    errorDiv.innerText = `Error: ${data.detail || 'An unknown error occurred.'}`;
                     errorDiv.classList.remove('hidden');
                 }
-            } catch (error) {
-                // Hide loading indicator and display a network error
+            } catch (err) {
                 loadingIndicator.classList.add('hidden');
-                errorDiv.innerText = "Error: Could not connect to the service.";
+                errorDiv.innerText = `Error: Could not connect to the service. Please ensure the backend is running.`;
                 errorDiv.classList.remove('hidden');
             }
         }

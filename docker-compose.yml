@@ -1,17 +1,20 @@
-version: "3.9"
-
 services:
   rag-service:
-    build: ./rag-service
+    build:
+      context: .
+      dockerfile: rag-service/dockerfile
     ports:
       - "8002:8002"
     volumes:
       - ./rag-service:/app
+      - ./healthcare-qa-dataset-jsonl/healthcare_qa_dataset.jsonl:/data/healthcare_qa_dataset.jsonl
     env_file:
       - .env
 
   gateway-service:
-    build: ./gateway-service
+    build:
+      context: .
+      dockerfile: gateway-service/dockerfile
     ports:
       - "8000:8000"
     volumes:

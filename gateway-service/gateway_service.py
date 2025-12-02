@@ -2,17 +2,21 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import requests
 from pydantic import BaseModel
+import requests
 import pymongo
 from datetime import datetime
 import os
+import uuid
 
-ATLAS_URI = os.getenv("ATLAS_CONNECTION_STRING")
+# Env variables
+ATLAS_CONNECTION_STRING = os.getenv("ATLAS_CONNECTION_STRING")
 HF_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
-app = FastAPI()
+# FastAPI app
+app = FastAPI(title="Gateway Service")
 
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,62 +25,77 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Read the connection string from the environment variable
-ATLAS_CONNECTION_STRING = os.environ.get("ATLAS_CONNECTION_STRING")
-
-# Initialize MongoDB client and database
+# MongoDB client & collection
 client = pymongo.MongoClient(ATLAS_CONNECTION_STRING)
 db = client.realtime_ai_db
 logs_collection = db.logs
 
+
 class QueryData(BaseModel):
-    """
-    Data model for the incoming user query.
-    """
+    """Incoming user query."""
     query: str
+
 
 @app.post("/ask")
 async def ask_question(data: QueryData):
     """
-    This endpoint acts as the gateway for the Q&A system.
-    It receives a user question, forwards it to the RAG service,
-    and logs the interaction to MongoDB.
+    Gateway endpoint:
+    - Receives user query
+    - Forwards to rag-service
+    - Logs Q/A in MongoDB
     """
     start_time = datetime.utcnow()
-    # Updated URL to use the Docker Compose service name and new endpoint
     rag_service_url = "http://rag-service:8002/ask"
-    
+
     try:
-        # Forward the request to the RAG service with the new data model
         response = requests.post(rag_service_url, json={"query": data.query})
-        
         if response.status_code == 200:
             result = response.json()
-            
-            # Log the successful request to MongoDB
+
             log_entry = {
+                "request_id": str(uuid.uuid4()),
                 "input_query": data.query,
                 "answer": result.get("answer"),
-                "context": result.get("context"),
+                "source": result.get("source"),
+                "score": result.get("score"),
                 "request_timestamp": start_time,
-                "response_timestamp": datetime.utcnow()
+                "response_timestamp": datetime.utcnow(),
             }
             logs_collection.insert_one(log_entry)
-            
+
             return result
-        
         else:
-            # Handle cases where the RAG service returns an error
-            return {"error": "RAG service returned an error.", "details": response.text}
-            
+            return {
+                "error": "RAG service returned an error.",
+                "details": response.text,
+            }
+
     except requests.exceptions.RequestException as e:
-        # Log the error if the RAG service is not reachable
         log_entry = {
+            "request_id": str(uuid.uuid4()),
             "input_query": data.query,
             "error": str(e),
             "request_timestamp": start_time,
-            "response_timestamp": datetime.utcnow()
+            "response_timestamp": datetime.utcnow(),
         }
         logs_collection.insert_one(log_entry)
 
         return {"error": "Could not connect to RAG service."}
+
+
+@app.get("/logs")
+async def get_logs(limit: int = 10):
+    """
+    Return recent logs from MongoDB (default: 10 latest).
+    """
+    logs = list(
+        logs_collection.find().sort("request_timestamp", -1).limit(limit)
+    )
+    # Convert ObjectId + datetime to strings
+    for log in logs:
+        log["_id"] = str(log["_id"])
+        if "request_timestamp" in log:
+            log["request_timestamp"] = log["request_timestamp"].isoformat()
+        if "response_timestamp" in log:
+            log["response_timestamp"] = log["response_timestamp"].isoformat()
+    return {"logs": logs}

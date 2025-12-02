@@ -1,22 +1,29 @@
-# Use an official Python runtime as a parent image
-FROM python:3.12-slim
+# Use an official lightweight Python image
+FROM python:3.11-slim
+
+# Prevent Python from writing pyc files and buffering stdout
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Install necessary network utilities.
-# These packages are often missing from slim images and are
-# required for DNS resolution and other networking tasks.
-RUN apt-get update && apt-get install -y dnsutils libgssapi-krb5-2
+# Install only what’s necessary (remove bloat like dnsutils unless needed)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgssapi-krb5-2 \
+ && rm -rf /var/lib/apt/lists/*
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy requirements first for caching
+COPY gateway-service/requirements.txt /app/
 
-# Install any needed packages specified in requirements.txt
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 8000 available to the world outside this container
+# Copy service code
+COPY gateway-service/gateway_service.py /app/
+
+# Expose FastAPI port
 EXPOSE 8000
 
-# Define the command to run the application
+# Run the gateway service
 CMD ["uvicorn", "gateway_service:app", "--host", "0.0.0.0", "--port", "8000"]
