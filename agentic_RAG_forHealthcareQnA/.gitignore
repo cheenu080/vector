@@ -1,26 +1,31 @@
-# Python
+# ======================================================
+# PYTHON
+# ======================================================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.db
-*.log
 
-# Virtual environments
+# ======================================================
+# ENVIRONMENTS / SECRETS
+# ======================================================
 venv/
 .env
 .env.*
 
-# OS-specific
+# ======================================================
+# OS / EDITOR
+# ======================================================
 .DS_Store
 Thumbs.db
-
-# Editor/IDE
 .vscode/
 .idea/
 *.swp
+*.swo
 
-# Ignore all data files by default
+# ======================================================
+# DATA (IGNORE EVERYTHING BY DEFAULT)
+# ======================================================
 data/*
 
 # Allow dataset documentation + scripts
@@ -29,59 +34,46 @@ data/*
 !data/healthcare-qa-dataset-jsonl/README.md
 !data/healthcare-qa-dataset-jsonl/load_dataset.py
 
-# Still ignore raw & processed dataset files inside that folder
-data/healthcare-qa-dataset-jsonl/*.jsonl
-data/*.jsonl
-data/*.faiss
-data/*.npy
-data/*.npz
+# Still ignore all dataset and index files inside allowed folders
+data/**/*.jsonl
+data/**/*.faiss
+data/**/*.npy
+data/**/*.npz
+data/**/*.csv
+data/**/*.tsv
 
-# Docker
+# ======================================================
+# DOCKER / BUILD
+# ======================================================
 *.pid
-*.seed
-*.bak
 *.tar
 *.gz
 *.tgz
 *.zip
-*.bak
-*.orig
-*.rej
-*.swo
-*.swp
-*~
-
-# Docker build artifacts
 *.egg-info/
 dist/
 build/
-*.egg
 .eggs/
 wheels/
 
-# FastAPI / Uvicorn logs
+# ======================================================
+# LOGS / SQLITE / NOTEBOOKS
+# ======================================================
 *.log
 *.sqlite3
-
-# Local notebooks/checkpoints
 .ipynb_checkpoints/
 *.ipynb
 
-# Coverage / test
+# ======================================================
+# TEST / COVERAGE
+# ======================================================
 .coverage
 htmlcov/
 .pytest_cache/
 .tox/
 .mypy_cache/
-pytestdebug.log
 
-# Node (if frontend ever added)
+# ======================================================
+# OPTIONAL FRONTEND ARTIFACTS
+# ======================================================
 node_modules/
-.env
-
-# RAG artifacts
-*.npy
-*.faiss
-rag_docs.json
-rag_index.faiss
-rag_embeddings.npy
