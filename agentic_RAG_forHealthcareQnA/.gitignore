@@ -20,6 +20,22 @@ Thumbs.db
 .idea/
 *.swp
 
+# Ignore all data files by default
+data/*
+
+# Allow dataset documentation + scripts
+!data/README.md
+!data/healthcare-qa-dataset-jsonl/
+!data/healthcare-qa-dataset-jsonl/README.md
+!data/healthcare-qa-dataset-jsonl/load_dataset.py
+
+# Still ignore raw & processed dataset files inside that folder
+data/healthcare-qa-dataset-jsonl/*.jsonl
+data/*.jsonl
+data/*.faiss
+data/*.npy
+data/*.npz
+
 # Docker
 *.pid
 *.seed

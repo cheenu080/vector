@@ -1,33 +1,27 @@
-# Use Python 3.11 for FastAPI + Pydantic v2 compatibility
 FROM python:3.11-slim
 
-# Prevent Python from writing pyc files and buffering stdout
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Set working directory
 WORKDIR /app
 
-# Copy only requirements first for caching
-COPY rag-service/requirements.txt .
-
-# Install system dependencies required by nltk and others
+# System deps (minimal)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        wget \
-        unzip \
         build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
+# Copy requirements first (cache layer)
+COPY rag-service/requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt \
     && python -m nltk.downloader punkt wordnet
 
 # Copy service code
 COPY rag-service/rag_service.py .
 
-# Expose service port
+# Ensure /data mount point exists
+RUN mkdir -p /data
+
 EXPOSE 8002
 
-# Default command to run the FastAPI app
-CMD ["uvicorn", "rag_service:app", "--host", "0.0.0.0", "--port", "8002", "--reload"]
+CMD ["uvicorn", "rag_service:app", "--host", "0.0.0.0", "--port", "8002"]

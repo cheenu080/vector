@@ -1,29 +1,40 @@
-# Use an official lightweight Python image
+# Lightweight Python base
 FROM python:3.11-slim
 
-# Prevent Python from writing pyc files and buffering stdout
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Prevent .pyc files & enable unbuffered logs
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONFAULTHANDLER=1
 
-# Set the working directory in the container
+# Working directory
 WORKDIR /app
 
-# Install only what’s necessary (remove bloat like dnsutils unless needed)
+# System packages required for motor + TLS CA certificates for MongoDB Atlas
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgssapi-krb5-2 \
- && rm -rf /var/lib/apt/lists/*
+        libgssapi-krb5-2 \
+        ca-certificates \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for caching
-COPY gateway-service/requirements.txt /app/
+# Copy requirements first (for caching)
+COPY gateway-service/requirements.txt /app/requirements.txt
 
-# Install dependencies
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy service code
-COPY gateway-service/gateway_service.py /app/
+# Copy application code
+COPY gateway-service/gateway_service.py /app/gateway_service.py
+
+# Default env vars (override via docker-compose)
+ENV RAG_SERVICE_URL="http://rag-service:8002/ask" \
+    ADMIN_API_KEY="changeme"
 
 # Expose FastAPI port
 EXPOSE 8000
 
-# Run the gateway service
+# Create non-root user and fix permissions
+RUN useradd -m appuser && chown -R appuser /app
+USER appuser
+
+# Start server
 CMD ["uvicorn", "gateway_service:app", "--host", "0.0.0.0", "--port", "8000"]

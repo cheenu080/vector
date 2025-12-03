@@ -3,25 +3,34 @@ services:
     build:
       context: .
       dockerfile: rag-service/dockerfile
+    container_name: rag-service
     ports:
       - "8002:8002"
-    volumes:
-      - ./rag-service:/app
-      - ./healthcare-qa-dataset-jsonl/healthcare_qa_dataset.jsonl:/data/healthcare_qa_dataset.jsonl
     env_file:
       - .env
+    environment:
+      DATA_DIR: "/data"
+    volumes:
+      # Mount entire data folder (dataset + FAISS)
+      - ./data:/data
+    restart: unless-stopped
 
   gateway-service:
     build:
       context: .
       dockerfile: gateway-service/dockerfile
+    container_name: gateway-service
     ports:
       - "8000:8000"
-    volumes:
-      - ./gateway-service:/app
     depends_on:
       - rag-service
-    dns:
-      - 8.8.8.8
     env_file:
       - .env
+    environment:
+      RAG_SERVICE_URL: "http://rag-service:8002/ask"
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+
+volumes:
+  rag_data:
